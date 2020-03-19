@@ -119,15 +119,21 @@ export const MaybeLink: React.FC<{ location: string; label: string }> = ({ locat
         {label}
       </a>
     );
-  } else if (label === location) {
-    return <span>{location}</span>;
-  } else {
-    return (
-      <span>
-        {label}: {location}
-      </span>
-    );
+  } else if (/http/i.test(location)) {
+    let address = location.split('Link Address:')[1]
+    return <span>{location.split('Link Address:')[0] + ", Link Address:"}<a href={address}>{address}</a></span>
   }
+  else {
+    if (label === location) {
+      return <span>{location}</span>
+    } else {
+      return (
+        <span>
+          {label}: {location}
+        </span>
+      );
+    };
+  };
 };
 
 interface Context {

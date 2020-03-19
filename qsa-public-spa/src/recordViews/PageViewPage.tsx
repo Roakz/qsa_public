@@ -104,6 +104,7 @@ const PageViewPage: React.FC<PageRoute> = (route: PageRoute) => {
 
     if (firstChild) {
       route.setPageTitle((firstChild as HTMLElement).innerText || '');
+      route.triggerPageViewTracker();
     }
   }, [loaded, route]);
 

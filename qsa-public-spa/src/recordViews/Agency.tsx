@@ -44,6 +44,7 @@ const AgencyPage: React.FC<PageRoute> = (route: PageRoute) => {
     return <Layout skipFooter={true} />;
   } else {
     route.setPageTitle(`Agency: ${agency.get('display_string')}`);
+    route.triggerPageViewTracker();
 
     const controlledRecordsQuery = AdvancedSearchQuery.emptyQuery().addStickyFilter(
       'responsible_agency_id',
@@ -214,9 +215,9 @@ const AgencyPage: React.FC<PageRoute> = (route: PageRoute) => {
                   );
                 })}
               </ul>
-              {agency.getArray('mandate_relationships').length > 0 && <h3>Related mandates</h3>}
+              {agency.getArray('function_relationships').length > 0 && <h3>Related functions</h3>}
               <ul className="list-group list-group-flush">
-                {agency.getArray('mandate_relationships').map((rlshp: any, idx: number) => {
+                {agency.getArray('function_relationships').map((rlshp: any, idx: number) => {
                   return (
                     <li key={idx} className="list-group-item">
                       {<Relationship relationship={rlshp} />}
@@ -224,9 +225,9 @@ const AgencyPage: React.FC<PageRoute> = (route: PageRoute) => {
                   );
                 })}
               </ul>
-              {agency.getArray('function_relationships').length > 0 && <h3>Related functions</h3>}
+              {agency.getArray('mandate_relationships').length > 0 && <h3>Related mandates</h3>}
               <ul className="list-group list-group-flush">
-                {agency.getArray('function_relationships').map((rlshp: any, idx: number) => {
+                {agency.getArray('mandate_relationships').map((rlshp: any, idx: number) => {
                   return (
                     <li key={idx} className="list-group-item">
                       {<Relationship relationship={rlshp} />}

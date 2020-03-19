@@ -1,11 +1,11 @@
 import React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
 import Layout from './Layout';
 import AspaceAdvancedSearch from '../advancedSearch/AdvancedSearch';
 import { AdvancedSearchQuery } from '../models/AdvancedSearch';
 import {PageSnippet} from './PageViewPage';
+import {PageRoute} from "../models/PageRoute";
 
-const HomePage: React.FC<RouteComponentProps<any>> = (route: RouteComponentProps<any>) => {
+const HomePage: React.FC<PageRoute> = (route: PageRoute) => {
   return (
     <Layout>
       <h1>ArchivesSearch</h1>

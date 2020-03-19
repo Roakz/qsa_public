@@ -60,6 +60,7 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
     return <Layout skipFooter={true} />;
   } else {
     route.setPageTitle(`Series: ${series.get('title')}`);
+    route.triggerPageViewTracker();
 
     return (
       <Layout aside={<RecordContext qsaId={qsaId} recordType="resource" />}>
@@ -149,7 +150,7 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
                 {series.getNotes('description', null, (notes: Note[]) => (
                     <AccordionPanel
                         id={series.generateId()}
-                        title="Notes - Description"
+                        title="Description"
                         children={notes.map((note: Note, idx: number) => (
                             <NoteDisplay note={note} key={idx} />
                         ))}
@@ -277,9 +278,9 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
                 })}
               </ul>
 
-              {series.getArray('mandate_relationships').length > 0 && <h3>Related mandates</h3>}
+              {series.getArray('function_relationships').length > 0 && <h3>Related functions</h3>}
               <ul className="list-group list-group-flush">
-                {series.getArray('mandate_relationships').map((rlshp: any, idx: number) => {
+                {series.getArray('function_relationships').map((rlshp: any, idx: number) => {
                   return (
                     <li key={idx} className="list-group-item">
                       {<Relationship relationship={rlshp} />}
@@ -287,10 +288,10 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
                   );
                 })}
               </ul>
-
-              {series.getArray('function_relationships').length > 0 && <h3>Related functions</h3>}
+              
+              {series.getArray('mandate_relationships').length > 0 && <h3>Related mandates</h3>}
               <ul className="list-group list-group-flush">
-                {series.getArray('function_relationships').map((rlshp: any, idx: number) => {
+                {series.getArray('mandate_relationships').map((rlshp: any, idx: number) => {
                   return (
                     <li key={idx} className="list-group-item">
                       {<Relationship relationship={rlshp} />}

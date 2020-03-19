@@ -44,6 +44,15 @@ import { DigitalCopyMinicartPage } from "./cart/DigitalCopyMinicartPage";
 
 import ErrorPage from "./context/ErrorPage";
 
+import ReactGA from 'react-ga';
+import {RecordDisplay} from "./models/RecordDisplay";
+
+declare var AppConfig: any;
+
+if (AppConfig.google_analytics_tracking_id) {
+  ReactGA.initialize(AppConfig.google_analytics_tracking_id);
+}
+
 /* Establish error handling */
 class ErrorBuffer {
   static FLUSH_DELAY_MS = 2000;
@@ -141,7 +150,7 @@ window.addEventListener('error', function(event) {
 
 let routeKey = 0;
 
-function wrappedRoute(component: any, opts: { alwaysRender?: boolean; pageTitle?: string } = {}): any {
+function wrappedRoute(component: any, opts: { alwaysRender?: boolean; pageTitle?: string; deferTriggerPageView?: boolean } = {}): any {
   if (typeof opts.alwaysRender === 'undefined') {
     opts.alwaysRender = true;
   }
@@ -163,8 +172,28 @@ function wrappedRoute(component: any, opts: { alwaysRender?: boolean; pageTitle?
       }
     };
 
+    const triggerPageViewTracker = (path?: string) => {
+      if (AppConfig.google_analytics_tracking_id) {
+        if (path) {
+          ReactGA.pageview(path);
+        } else {
+          ReactGA.pageview(window.location.pathname + window.location.search);
+        }
+      }
+    };
+
+    const triggerDownloadTracker = (path: any, representation: RecordDisplay): void => {
+      if (AppConfig.google_analytics_tracking_id) {
+        ReactGA.pageview(path, [], 'Download: ' + representation.get('qsa_id_prefixed') + ' ' + representation.get('title'));
+      }
+    };
+
     if (opts.pageTitle) {
       setPageTitle(opts.pageTitle);
+    }
+
+    if (!opts.deferTriggerPageView) {
+      triggerPageViewTracker();
     }
 
     routeKey++;
@@ -180,6 +209,8 @@ function wrappedRoute(component: any, opts: { alwaysRender?: boolean; pageTitle?
                               routeKey,
                               setPageTitle,
                               context,
+                              triggerPageViewTracker,
+                              triggerDownloadTracker,
                             },
                             opts.alwaysRender ? { key: routeKey } : {}));
           }
@@ -200,11 +231,11 @@ ReactDOM.render(
             pageTitle: 'ArchivesSearch: Home'
           })}
         />
-        <Route path="/agencies/:qsaId" component={wrappedRoute(AgencyPage, { pageTitle: 'View agency' })} />
-        <Route path="/series/:qsaId" component={wrappedRoute(SeriesPage, { pageTitle: 'View series' })} />
-        <Route path="/functions/:qsaId" component={wrappedRoute(FunctionPage, { pageTitle: 'View function' })} />
-        <Route path="/mandates/:qsaId" component={wrappedRoute(MandatePage, { pageTitle: 'View mandate' })} />
-        <Route path="/items/:qsaId" component={wrappedRoute(ItemPage, { pageTitle: 'View item' })} />
+        <Route path="/agencies/:qsaId" component={wrappedRoute(AgencyPage, { pageTitle: 'View agency', deferTriggerPageView: true })} />
+        <Route path="/series/:qsaId" component={wrappedRoute(SeriesPage, { pageTitle: 'View series', deferTriggerPageView: true })} />
+        <Route path="/functions/:qsaId" component={wrappedRoute(FunctionPage, { pageTitle: 'View function', deferTriggerPageView: true })} />
+        <Route path="/mandates/:qsaId" component={wrappedRoute(MandatePage, { pageTitle: 'View mandate', deferTriggerPageView: true })} />
+        <Route path="/items/:qsaId" component={wrappedRoute(ItemPage, { pageTitle: 'View item', deferTriggerPageView: true })} />
         <Route exact path="/login" component={wrappedRoute(LoginPage, { pageTitle: 'Login' })} />
         <Route exact path="/search" component={wrappedRoute(ResultsPage, { pageTitle: 'Search records' })} />
         <Route exact path="/register" component={wrappedRoute(RegisterPage, { pageTitle: 'Register' })} />
@@ -295,7 +326,8 @@ ReactDOM.render(
             exact
             path="/pages/:slug"
             component={wrappedRoute(PageViewPage, {
-              pageTitle: 'View Page'
+              pageTitle: 'View Page',
+              deferTriggerPageView: true,
             })}
         />
         <Route

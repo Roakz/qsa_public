@@ -70,7 +70,8 @@ export const snakeToUppercaseInitials = (s: string): string => {
   return s
     .split('_')
     .map(uppercaseInitials)
-    .join(' ');
+    .join(' ')
+    .replace("Is", "");
 };
 
 export const labelForRelator = (relator: string): string => {

@@ -1,8 +1,8 @@
 import React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
 import Layout from './Layout';
+import {PageRoute} from "../models/PageRoute";
 
-const NotFound: React.FC<RouteComponentProps<any>> = (route: RouteComponentProps<any>) => {
+const NotFound: React.FC<PageRoute> = (route: PageRoute) => {
   return <Layout noindex={true}>Sorry, page not found.</Layout>;
 };
 

@@ -110,6 +110,10 @@ class QSAPublic < Sinatra::Base
                            :recaptcha_params,
                            :recaptcha_site_key].map {|prop| [prop.to_s, AppConfig[prop]]}.to_h
 
+    if AppConfig.has_key?(:google_analytics_tracking_id)
+      exported_properties['google_analytics_tracking_id'] = AppConfig[:google_analytics_tracking_id]
+    end
+
     File.open(target, 'w') do |fh|
       fh.write("// AUTO-GENERATED: Do not edit!\n")
       fh.write("window.AppConfig = ")

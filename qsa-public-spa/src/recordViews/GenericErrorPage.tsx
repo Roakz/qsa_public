@@ -1,11 +1,10 @@
 import React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
-
 import Layout from './Layout';
+import { PageRoute } from "../models/PageRoute";
 
-const GenericErrorPage: React.FC<RouteComponentProps<any>> = (route: RouteComponentProps<any>) => {
-  const props = queryString.parse(route.location.search)
+const GenericErrorPage: React.FC<PageRoute> = (route: PageRoute) => {
+  const props = queryString.parse(route.location.search);
 
   console.error("GENERIC ERROR: " + props.msg);
 

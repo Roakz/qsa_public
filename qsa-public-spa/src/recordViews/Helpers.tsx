@@ -116,14 +116,13 @@ export const MaybeLink: React.FC<{ location: string; label: string }> = ({ locat
   if (/^http/i.test(location)) {
     return (
       <a href={location} target="_blank" rel="noopener noreferrer">
-        {label}
+      {label}
       </a>
     );
   } else if (/http/i.test(location)) {
-      let address = `http${location.split('http')[1]}`
-      return <span>{location.split('http')[0]}<a href={address}>{address}</a></span>
-  }
-  else {
+    let address = `${location.match(/(?:www|https?)[^\s]*/)}`
+    return <span>{location.split(address)[0]}<a href={address}>{address}</a>{location.split(address)[1]}</span>
+  } else {
     if (label === location) {
       return <span>{location}</span>
     } else {

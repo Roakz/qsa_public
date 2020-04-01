@@ -31,6 +31,8 @@ AppConfig[:enable_debug_cart_endpoint] = true
 
 AppConfig[:page_content_cache_seconds] = 30
 
+AppConfig[:session_expire_after_seconds] = 3600
+
 begin
   load File.join(File.dirname(__FILE__), "/config.local.rb")
 rescue LoadError

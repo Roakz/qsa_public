@@ -6,6 +6,8 @@ import { BrowserRouter, Switch, Route, RouteComponentProps } from 'react-router-
 import AppContext, {IAppContext} from './context/AppContext';
 
 import axios from 'axios';
+import { Http } from './utils/http';
+
 
 import './scss/qsa-public.scss';
 
@@ -88,7 +90,7 @@ class ErrorBuffer {
 
     this.flushing = true;
     axios
-      .post(`${process.env.REACT_APP_QSA_PUBLIC_URL}/api/error_report`, {
+      .post(`${process.env.REACT_APP_QSA_PUBLIC_URL || ''}/api/error_report`, {
         errors: this.formatErrors(errors),
         consoleMessages: this.formatMessages(consoleMessages)
       })
@@ -134,6 +136,7 @@ Object.keys(browserConsole).forEach(function(key) {
       method: key,
       arguments: rest
     });
+
     browserConsole[key].apply(this, arguments);
   };
 });
@@ -201,6 +204,10 @@ function wrappedRoute(component: any, opts: { alwaysRender?: boolean; pageTitle?
       <AppContext.Consumer>
         {
           (context: IAppContext) => {
+            Http.sessionGoneHandler = () => {
+              context.setShowLoggedOutMessage(true);
+            };
+
             return React.createElement(
               component,
               Object.assign({},

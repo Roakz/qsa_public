@@ -8,7 +8,6 @@ import { iconForType, labelForType } from '../utils/typeResolver';
 import {CoreInformationDateDisplay, Relationship} from './Helpers';
 import { AdvancedSearchQuery } from '../models/AdvancedSearch';
 import { PageRoute } from '../models/PageRoute';
-import {preserveNewLines, rewriteISODates} from "../utils/rendering";
 
 
 const FunctionPage: React.FC<PageRoute> = (route: PageRoute) => {

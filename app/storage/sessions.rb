@@ -3,6 +3,9 @@ class Sessions < BaseStorage
   class SessionNotFoundError < StandardError
   end
 
+  class SessionTimeout < StandardError
+  end
+
   class Session
     attr_reader :id, :user_id, :create_time, :data
 
@@ -47,6 +50,12 @@ class Sessions < BaseStorage
     row = db[:session][:session_id => session_id]
 
     if row
+      if (java.lang.System.currentTimeMillis - row[:last_used_time]) > (AppConfig[:session_expire_after_seconds] * 1000)
+        delete_session(session_id)
+
+        raise SessionTimeout.new
+      end
+
       Session.new(row[:session_id], row[:user_id], row[:create_time], JSON.parse(row[:session_data]))
     else
       raise SessionNotFoundError.new

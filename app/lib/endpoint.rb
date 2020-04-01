@@ -140,20 +140,26 @@ class Endpoint
         app_instance = self
 
         Ctx.open({}, session) do
-
           if session_id = env['HTTP_X_ARCHIVESSEARCH_SESSION']
             begin
               Ctx.get.session = Sessions.get_session(session_id)
+            rescue Sessions::SessionTimeout
+              # Session expired due to inactivity
+              app_instance.headers('X-ArchivesSearch-Session-Gone' => 'true')
             rescue Sessions::SessionNotFoundError
-              # User's token not valid
+              # No such session
             end
           end
 
           if endpoint.needs_session? && Ctx.get.session.nil?
-            raise Sessions::SessionNotFoundError.new("A session is required to access this endpoint")
+            return [403, {}, {"SERVER_ERROR" => {type: "Sessions::SessionNotFoundError", message: "A session is required to access this endpoint"}}.to_json]
           end
 
-          app_instance.instance_eval(&block)
+          response = app_instance.instance_eval(&block)
+
+          app_instance.headers('Access-Control-Expose-Headers' => 'X-ArchivesSearch-Session-Gone')
+
+          response
         end
       end
     end

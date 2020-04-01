@@ -20,7 +20,13 @@ export const UserSession: React.FC<any> = (props: any) => {
   };
 
   return (
-    <>
+   <>
+      {context.showLoggedOutMessage && (
+        <div className="alert alert-warning" role="alert" style={{ marginTop: 5, marginBottom: 5, padding: '0 10px' }}>
+          <p>Your session expired due to inactivity.  Please log in again.</p>
+        </div>
+      )}
+
       {context.sessionLoaded && (
         <div className="login-box pull-right">
           <CartSummary cart={context.cart} />

@@ -9,56 +9,67 @@ class DBConnection
   def open(opts = {})
     raise "Not connected" unless @connected
 
-    transaction = opts.fetch(:transaction, true)
+    Thread.current[:nesting_level] ||= 0
+    Thread.current[:nesting_level] += 1
 
     begin
-      last_err = false
-      retries = opts.fetch(:retries, 100)
+      if Thread.current[:nesting_level] > 1
+        return yield @pool.pool
+      end
 
-      retries.times do |attempt|
-        begin
-          if transaction
-            result = nil
-            @pool.transaction(isolation: opts.fetch(:isolation_level, :repeatable),
-                              rollback: opts.fetch(:rollback, nil)) do |db|
-              result = yield db
-              result
+      transaction = opts.fetch(:transaction, true)
+
+      begin
+        last_err = false
+        retries = opts.fetch(:retries, 100)
+
+        retries.times do |attempt|
+          begin
+            if transaction
+              result = nil
+              @pool.transaction(isolation: opts.fetch(:isolation_level, :repeatable),
+                                rollback: opts.fetch(:rollback, nil)) do |db|
+                result = yield db
+                result
+              end
+
+              # Sometimes we'll make it to here.  That means we threw a
+              # Sequel::Rollback which has been quietly caught.
+              return result
+            else
+              begin
+                return yield @pool.pool
+              rescue Sequel::Rollback
+                # If we're not in a transaction we can't roll back, but no need to blow up.
+                $LOG.info("Sequel::Rollback caught but we're not inside of a transaction")
+                return nil
+              end
             end
+          rescue Sequel::DatabaseDisconnectError, Sequel::DatabaseConnectionError => e
+            # MySQL might have been restarted.
+            last_err = e
+            $LOG.info("Connecting to the database failed.  Retrying...")
+            sleep(opts[:db_failed_retry_delay] || 0.5)
 
-            # Sometimes we'll make it to here.  That means we threw a
-            # Sequel::Rollback which has been quietly caught.
-            return result
-          else
-            begin
-              return yield @pool.pool
-            rescue Sequel::Rollback
-              # If we're not in a transaction we can't roll back, but no need to blow up.
-              $LOG.info("Sequel::Rollback caught but we're not inside of a transaction")
-              return nil
+
+          rescue Sequel::NoExistingObject, Sequel::DatabaseError => e
+            if (attempt + 1) < retries && is_retriable_exception(e, opts) && transaction
+              $LOG.info("Retrying transaction after retriable exception (#{e})")
+              sleep(opts[:retry_delay] || 0.2)
+            else
+              raise e
             end
-          end
-        rescue Sequel::DatabaseDisconnectError, Sequel::DatabaseConnectionError => e
-          # MySQL might have been restarted.
-          last_err = e
-          $LOG.info("Connecting to the database failed.  Retrying...")
-          sleep(opts[:db_failed_retry_delay] || 0.5)
-
-
-        rescue Sequel::NoExistingObject, Sequel::DatabaseError => e
-          if (attempt + 1) < retries && is_retriable_exception(e, opts) && transaction
-            $LOG.info("Retrying transaction after retriable exception (#{e})")
-            sleep(opts[:retry_delay] || 0.2)
-          else
-            raise e
           end
         end
-      end
 
-      if last_err
-        $LOG.info("Failed to connect to the database")
+        if last_err
+          $LOG.info("Failed to connect to the database")
 
-        raise "Failed to connect to the database: #{last_err}"
+          raise "Failed to connect to the database: #{last_err}"
+        end
       end
+    ensure
+      Thread.current[:nesting_level] -= 1
     end
   end
 

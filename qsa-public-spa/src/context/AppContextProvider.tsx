@@ -37,6 +37,7 @@ const AppContextProvider: React.FC<any> = (props: any) => {
     sessionId: existingSession,
     masterSessionId: masterSession,
     captchaVerified: null,
+    showLoggedOutMessage: false,
 
     /* Update the currently logged in user */
     setUser: (user: any) => {
@@ -59,7 +60,10 @@ const AppContextProvider: React.FC<any> = (props: any) => {
       Http.login(sessionId);
 
       setAppContext((oldState: IAppContext) => {
-        return Object.assign({}, oldState, { sessionId: sessionId });
+        return Object.assign({}, oldState, {
+          sessionId: sessionId,
+          showLoggedOutMessage: false,
+        });
       });
     },
 
@@ -68,6 +72,26 @@ const AppContextProvider: React.FC<any> = (props: any) => {
       setAppContext((oldState: IAppContext) => {
         return Object.assign({}, oldState, { sessionLoaded: value });
       });
+    },
+
+    setShowLoggedOutMessage: (value: boolean) => {
+      if (value) {
+        setAppContext((oldState: IAppContext) => Object.assign({}, oldState,
+                                                               {
+                                                                 showLoggedOutMessage: true,
+                                                                 sessionId: null,
+                                                                 sessionLoaded: true,
+                                                                 user: null,
+                                                                 cart: null,
+                                                                 masterSessionId: null,
+                                                                 captchaVerified: null,
+                                                               }));
+      } else {
+        setAppContext((oldState: IAppContext) => Object.assign({}, oldState,
+                                                               {
+                                                                 showLoggedOutMessage: false,
+                                                               }));
+      }
     },
 
     refreshCart: (): Promise<any> => {

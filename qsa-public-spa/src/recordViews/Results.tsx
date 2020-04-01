@@ -9,8 +9,6 @@ import queryString from 'query-string';
 import { PageRoute } from '../models/PageRoute';
 import {preserveNewLines, rewriteISODates} from "../utils/rendering";
 import { DateRangePicker } from './DateRangePicker';
-import {type} from "os";
-
 
 
 const FACET_LABELS: { [name: string]: string } = {
@@ -458,7 +456,7 @@ const SearchResults: React.FC<{
     }
   };
 
-  if (sort != props.advancedSearchQuery.getSort()) {
+  if (sort !== props.advancedSearchQuery.getSort()) {
     // Show results with the new sort order
     return <Redirect to={'/search?' + props.advancedSearchQuery.setSort(sort).toQueryString()} />;
   }

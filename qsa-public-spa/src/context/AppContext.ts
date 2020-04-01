@@ -13,6 +13,7 @@ export interface IAppContext {
   setMasterSessionId: (sessionId: string | null) => void;
   setSessionId: (sessionId: string | null) => void;
   setSessionLoaded: (value: boolean) => void;
+  setShowLoggedOutMessage: (value: boolean) => void;
   refreshCart: () => Promise<any>;
   clearSession: (showLogout?: boolean) => void;
 }
@@ -32,6 +33,7 @@ const AppContext: React.Context<IAppContext> = React.createContext(
     setMasterSessionId: () => {},
     setSessionId: () => {},
     setSessionLoaded: () => {},
+    setShowLoggedOutMessage: (value: boolean) => {},
     refreshCart: (): Promise<any> => {
       return new Promise(() => {});
     },

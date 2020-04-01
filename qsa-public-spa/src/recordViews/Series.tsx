@@ -14,7 +14,6 @@ import {
 } from './Helpers';
 import {Tagger} from "./Tagger";
 import { PageRoute } from '../models/PageRoute';
-import {preserveNewLines, rewriteISODates} from "../utils/rendering";
 
 
 const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
@@ -157,6 +156,17 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
                     />
                 ))}
 
+                {series.getNotes('how_to_use', null, (notes: Note[]) => (
+                    <AccordionPanel
+                        id={series.generateId()}
+                        title="How to Use"
+                        children={notes.map((note: Note, idx: number) => (
+                            <NoteDisplay note={note} key={idx} />
+                        ))}
+                    />
+                ))}
+
+
                 {series.getExternalDocuments(['Helpful Resources'], (docs: any) => (
                     <AccordionPanel
                         id={series.generateId()}
@@ -209,7 +219,7 @@ const SeriesPage: React.FC<PageRoute> = (route: PageRoute) => {
                 ))}
 
 
-                {series.getNotes('custodhist', null, (notes: Note[]) => (
+                {series.getNotes('agency_control_number', null, (notes: Note[]) => (
                     <AccordionPanel
                         id={series.generateId()}
                         title="Agency Control Number"

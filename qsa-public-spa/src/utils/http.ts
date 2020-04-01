@@ -65,6 +65,8 @@ export class Http {
   private static instance: Http | null;
   private sessionId?: string;
 
+  public static sessionGoneHandler: () => void | null;
+
   constructor(sessionId?: string) {
     this.sessionId = sessionId;
   }
@@ -116,9 +118,31 @@ export class Http {
     return error;
   }
 
+  responseProcessor(response: any) {
+    if (Http.sessionGoneHandler && response.headers['x-archivessearch-session-gone']) {
+      Http.sessionGoneHandler();
+    }
+  }
+
+  async fireGet(url: any, ...axiosGetArgs: any[]): Promise<any> {
+    const response = await axios.get(url, ...axiosGetArgs);
+
+    this.responseProcessor(response);
+
+    return response;
+  }
+
+  async firePost(url: any, ...axiosPostArgs: any[]): Promise<any> {
+    const response = await axios.post(url, ...axiosPostArgs);
+
+    this.responseProcessor(response);
+
+    return response;
+  }
+
   async fetchResults<T>(advancedSearchQuery: AdvancedSearchQuery, page = 0, sort = 'relevance'): Promise<T[]> {
     const query = advancedSearchQuery.toJSON();
-    const response = await axios.post(`${searchUrl}?query=${query}&page=${page}&sort=${sort}`, this.getConfig()).catch(error => {
+    const response = await this.firePost(`${searchUrl}?query=${query}&page=${page}&sort=${sort}`, {}, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to fetch search results");
     });
 
@@ -126,8 +150,7 @@ export class Http {
   }
 
   async fetchByQSAID(qsaId: string, recordType: string): Promise<any> {
-    const response = await axios
-      .get(`${fetchUrl}?qsa_id=${qsaId}&type=${recordType}`, this.getConfig())
+    const response = await this.fireGet(`${fetchUrl}?qsa_id=${qsaId}&type=${recordType}`, this.getConfig())
       .catch(error => {
         return this.handleError(error, `Failure fetching record with ID ${qsaId}`);
       });
@@ -136,8 +159,7 @@ export class Http {
   }
 
   async fetchContextByQSAID(qsaId: string, recordType: string): Promise<any> {
-    const response = await axios
-      .get(`${contextUrl}?qsa_id=${qsaId}&type=${recordType}`, this.getConfig())
+    const response = await this.fireGet(`${contextUrl}?qsa_id=${qsaId}&type=${recordType}`, this.getConfig())
       .catch(error => {
         return {data: false}
       });
@@ -150,8 +172,7 @@ export class Http {
     bodyFormData.set('email', email);
     bodyFormData.set('password', password);
 
-    const response = await axios
-      .post(loginUrl, bodyFormData, {
+    const response = await this.firePost(loginUrl, bodyFormData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       .catch(error => {
@@ -162,7 +183,7 @@ export class Http {
   }
 
   async logout(): Promise<any> {
-    const response = await axios.post(logoutUrl, this.getConfig()).catch(error => {
+    const response = await this.firePost(logoutUrl, {}, this.getConfig()).catch(error => {
       return this.handleError(error, "Logout failed");
     });
 
@@ -170,15 +191,14 @@ export class Http {
   }
 
   async getCurrentUser(): Promise<AxiosResponse> {
-    return await axios.get(`${loggedInUserUrl}`, this.getConfig());
+    return await this.fireGet(`${loggedInUserUrl}`, this.getConfig());
   }
 
   async register(user: UserForm): Promise<any> {
     const bodyFormData = new FormData();
     bodyFormData.set('user', JSON.stringify(user));
 
-    const response = await axios
-      .post(registerUrl, bodyFormData, {
+    const response = await this.firePost(registerUrl, bodyFormData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       .catch(error => {
@@ -195,7 +215,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(updateContactDetailsUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(updateContactDetailsUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update user");
     });
 
@@ -211,7 +231,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(updatePasswordUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(updatePasswordUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update password");
     });
 
@@ -223,7 +243,7 @@ export class Http {
       version: undefined
     });
 
-    const response = await axios.get(`${usersUrl}`, Object.assign({}, this.getConfig(), { params }))
+    const response = await this.fireGet(`${usersUrl}`, Object.assign({}, this.getConfig(), { params }))
       .catch(error => {
         return this.handleError(error, "Failed to list users");
       });
@@ -233,7 +253,7 @@ export class Http {
 
   async getUser(userId: number): Promise<any> {
     const params = { user_id: userId };
-    const response = await axios.get(`${userUrl}`, Object.assign({}, this.getConfig(), { params }))
+    const response = await this.fireGet(`${userUrl}`, Object.assign({}, this.getConfig(), { params }))
       .catch(error => {
         return this.handleError(error, "Failed to get user");
       });
@@ -243,7 +263,7 @@ export class Http {
 
   async generateRecoveryToken(email: string): Promise<PasswordRecoveryResponse> {
     const params = { email };
-    const response = await axios.get(`${recoveryTokenUrl}`, Object.assign({}, this.getConfig(), { params }))
+    const response = await this.fireGet(`${recoveryTokenUrl}`, Object.assign({}, this.getConfig(), { params }))
       .catch(error => {
         return this.handleError(error, "Failed to get recovery token URL");
       });
@@ -257,7 +277,7 @@ export class Http {
       confirm_password: confirmPassword
     };
 
-    const response = await axios.get(`${recoveryTokenPasswordUrl}`, Object.assign({}, this.getConfig(), { params }))
+    const response = await this.fireGet(`${recoveryTokenPasswordUrl}`, Object.assign({}, this.getConfig(), { params }))
       .catch(error => {
         return this.handleError(error, "Failed to set recovered password");
       });
@@ -266,7 +286,7 @@ export class Http {
   }
 
   async getCart(): Promise<any> {
-    const response = await axios.get(`${cartUrl}`, this.getConfig())
+    const response = await this.fireGet(`${cartUrl}`, this.getConfig())
       .catch(error => {
         return this.handleError(error, "Failed to fetch cart");
       });
@@ -282,7 +302,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(addToCartUrl, bodyFormData, config)
+    const response = await this.firePost(addToCartUrl, bodyFormData, config)
       .catch(error => {
         return this.handleError(error, "Failed to add item to cart");
       });
@@ -300,7 +320,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(updateCartItemsUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(updateCartItemsUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update cart items");
     });
 
@@ -314,7 +334,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(removeFromCartUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(removeFromCartUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to remove item from cart");
     });
 
@@ -338,7 +358,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(submitReadingRoomRequestsUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(submitReadingRoomRequestsUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to submit reading room request");
     });
 
@@ -350,7 +370,7 @@ export class Http {
       sort_by: sortBy
     };
 
-    const response = await axios.get(`${userRequestsUrl}`, Object.assign({}, this.getConfig(), { params })).catch(error => {
+    const response = await this.fireGet(`${userRequestsUrl}`, Object.assign({}, this.getConfig(), { params })).catch(error => {
       return this.handleError(error, "Failed to get user requests");
     });
 
@@ -358,7 +378,7 @@ export class Http {
   }
 
   async getRequest(requestId: string): Promise<any> {
-    const response = await axios.get(`${userGetRequestUrl}${requestId}`, this.getConfig()).catch(error => {
+    const response = await this.fireGet(`${userGetRequestUrl}${requestId}`, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to get request");
     });
 
@@ -371,7 +391,7 @@ export class Http {
     const bodyFormData = new FormData();
     bodyFormData.set('id', requestId);
 
-    const response = await axios.post(cancelRequestUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(cancelRequestUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to cancel request");
     });
 
@@ -387,7 +407,7 @@ export class Http {
     bodyFormData.set('date_required', dateRequired);
     bodyFormData.set('time_required', timeRequired);
 
-    const response = await axios.post(updateRequestDateRequiredUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(updateRequestDateRequiredUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update request");
     });
 
@@ -400,7 +420,7 @@ export class Http {
     const bodyFormData = new FormData();
     bodyFormData.set('request_type', requestType);
 
-    const response = await axios.post(clearCartUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(clearCartUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to clear cart");
     });
 
@@ -413,7 +433,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(submitDigitalQuoteUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(submitDigitalQuoteUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to submit digital quote request");
     });
 
@@ -427,7 +447,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(becomeUserUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(becomeUserUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to become user");
     });
 
@@ -435,7 +455,7 @@ export class Http {
   }
 
   async getDigitalCopyPricing(): Promise<any> {
-    const response = await axios.get(`${digitalCopyPricingUrl}`, this.getConfig()).catch(error => {
+    const response = await this.fireGet(`${digitalCopyPricingUrl}`, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to get digital copy pricing");
     });
 
@@ -452,7 +472,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    return await axios.post(submitOrderUrl, bodyFormData, config).catch(error => {
+    return await this.firePost(submitOrderUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to submit order");
     });
   }
@@ -462,7 +482,7 @@ export class Http {
       record_id: recordId
     };
 
-    const response = await axios.get(`${getTagsUrl}`, Object.assign({}, this.getConfig(), { params }))
+    const response = await this.fireGet(`${getTagsUrl}`, Object.assign({}, this.getConfig(), { params }))
       .catch(error => {
         return this.handleError(error, "Failed to get tags");
       });
@@ -480,7 +500,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(addTagUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(addTagUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to add tag");
     });
 
@@ -494,7 +514,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(flagTagUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(flagTagUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to flag tag");
     });
 
@@ -502,7 +522,7 @@ export class Http {
   }
 
   async getAllFlaggedTags(): Promise<any> {
-    const response = await axios.get(`${getFlaggedTagsUrl}`, this.getConfig()).catch(error => {
+    const response = await this.fireGet(`${getFlaggedTagsUrl}`, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to list all flag tags");
     });
 
@@ -517,7 +537,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(moderateTagUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(moderateTagUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to moderate tag");
     });
 
@@ -525,7 +545,7 @@ export class Http {
   }
 
   async getBannedTags(): Promise<any> {
-    const response = await axios.get(`${getBannedTagsUrl}`, this.getConfig())
+    const response = await this.fireGet(`${getBannedTagsUrl}`, this.getConfig())
       .catch(error => {
         return this.handleError(error, "Failed to get banned tags");
       });
@@ -542,7 +562,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(addToBannedTagsUrl, bodyFormData, config)
+    const response = await this.firePost(addToBannedTagsUrl, bodyFormData, config)
       .catch(error => {
         return this.handleError(error, "Failed to add to banned tag");
       });
@@ -559,7 +579,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(removeFromBannedTagsUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(removeFromBannedTagsUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to remove banned tags");
     });
 
@@ -571,7 +591,7 @@ export class Http {
       tag: tag
     };
 
-    const response = await axios.get(`${getPreviewTagUrl}`, Object.assign({}, this.getConfig(), {params}))
+    const response = await this.fireGet(`${getPreviewTagUrl}`, Object.assign({}, this.getConfig(), {params}))
       .catch(error => {
         // Non-fatal!
         return {data: []};
@@ -587,7 +607,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(verifyCaptchaUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(verifyCaptchaUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to verify CAPTCHA");
     });
 
@@ -595,7 +615,7 @@ export class Http {
   }
 
   async isCaptchaVerified(): Promise<any> {
-    const response = await axios.get(`${isCaptchaVerifiedUrl}`, this.getConfig()).catch(error => {
+    const response = await this.fireGet(`${isCaptchaVerifiedUrl}`, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to check CAPTCHA verification status");
     });
 
@@ -603,7 +623,7 @@ export class Http {
   }
 
   async listPages(): Promise<any> {
-    const response = await axios.get(`${listPagesUrl}`, this.getConfig()).catch(error => {
+    const response = await this.fireGet(`${listPagesUrl}`, this.getConfig()).catch(error => {
       return this.handleError(error, "Failed to list pages");
     });
 
@@ -617,7 +637,7 @@ export class Http {
       params.nonce = nonce;
     }
 
-    const response = await axios.get(`${getPageContentUrl}`,
+    const response = await this.fireGet(`${getPageContentUrl}`,
                                      Object.assign({},
                                                    this.getConfig(),
                                                    { params }));
@@ -633,7 +653,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    return await axios.post(savePageUrl, bodyFormData, config)
+    return await this.firePost(savePageUrl, bodyFormData, config)
   }
 
   async deletePage(slug: string): Promise<any> {
@@ -643,7 +663,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(deletePageUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(deletePageUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to delete page");
     });
 
@@ -657,7 +677,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(restorePageUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(restorePageUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to restore page");
     });
 
@@ -665,7 +685,7 @@ export class Http {
   }
 
   async getSavedSearches(): Promise<any> {
-    const response = await axios.get(`${savedSearchesAllUrl}`, this.getConfig())
+    const response = await this.fireGet(`${savedSearchesAllUrl}`, this.getConfig())
         .catch(error => {
           return this.handleError(error, "Failed to get saved searches");
         });
@@ -680,7 +700,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(savedSearchesCreateUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(savedSearchesCreateUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to created saved search");
     });
 
@@ -694,7 +714,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(savedSearchesDeleteUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(savedSearchesDeleteUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to delete saved search");
     });
 
@@ -709,7 +729,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(savedSearchesUpdateUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(savedSearchesUpdateUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update saved search");
     });
 
@@ -725,7 +745,7 @@ export class Http {
     const config = this.getConfig();
     config.headers['Content-Type'] = 'multipart/form-data';
 
-    const response = await axios.post(reorderOpenRequestsUrl, bodyFormData, config).catch(error => {
+    const response = await this.firePost(reorderOpenRequestsUrl, bodyFormData, config).catch(error => {
       return this.handleError(error, "Failed to update order");
     });
 

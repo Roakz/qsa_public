@@ -20,8 +20,7 @@ import AppContext from '../context/AppContext';
 import {Tagger} from "./Tagger";
 import { IAppContext } from '../context/AppContext';
 import { PageRoute } from '../models/PageRoute';
-import {preserveNewLines, rewriteISODates} from "../utils/rendering";
-import ReactGA from "react-ga";
+import {rewriteISODates} from "../utils/rendering";
 
 declare var AppConfig: any;
 
@@ -152,7 +151,7 @@ const DownloadDigitalRepresentations: React.FC<{
     return !!rep.representation_file;
   });
 
-  if (downloadableRepresentations.length == 0) {
+  if (downloadableRepresentations.length === 0) {
     return <></>;
   }
 

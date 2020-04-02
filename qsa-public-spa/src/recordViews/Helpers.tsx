@@ -113,26 +113,20 @@ export const AccordionPanel: React.FC<{
 };
 
 export const MaybeLink: React.FC<{ location: string; label: string }> = ({ location, label }) => {
-  if (/^http/i.test(location)) {
-    return (
-      <a href={location} target="_blank" rel="noopener noreferrer">
-      {label}
-      </a>
-    );
-  } else if (/http/i.test(location)) {
+  if (/(?:www|https?)[^\s]*/i.test(location)) {
     let address = `${location.match(/(?:www|https?)[^\s]*/)}`
     return <span>{location.split(address)[0]}<a href={address}>{address}</a>{location.split(address)[1]}</span>
   } else {
-    if (label === location) {
-      return <span>{location}</span>
-    } else {
-      return (
-        <span>
-          {label}: {location}
-        </span>
-      );
+      if (label === location) {
+        return <span>{location}</span>
+      } else {
+          return (
+            <span>
+              {label}: {location}
+          </span>
+        );
+      };
     };
-  };
 };
 
 interface Context {
